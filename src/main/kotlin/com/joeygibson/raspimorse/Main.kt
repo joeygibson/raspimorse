@@ -23,18 +23,13 @@ package com.joeygibson.raspimorse
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
+import com.joeygibson.raspimorse.util.loadProperties
 import com.natpryce.hamkrest.should.describedAs
 import joptsimple.OptionParser
 import mu.KotlinLogging
-import java.io.FileInputStream
 import java.util.*
 import kotlin.system.exitProcess
-
-fun loadProperties(fileName: String) = Properties().apply {
-    FileInputStream(fileName).use { fis ->
-        load(fis)
-    }
-}
 
 val logger = KotlinLogging.logger {}
 

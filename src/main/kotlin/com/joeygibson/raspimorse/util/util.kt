@@ -27,6 +27,19 @@ import java.util.*
  * SOFTWARE.
  */
 
+data class Config(val keyPin: Int = 17, val ledPin: Int = 22) {
+    companion object {}
+}
+
+fun Config.Companion.from(fileName: String): Config {
+    val props = loadProperties(fileName)
+
+    val keyPin = props["key"].let { (it as? Int)?.toInt() ?: 0 }
+    val ledPin = props["led"].let { (it as? Int)?.toInt() ?: 0 }
+
+    return Config(keyPin = keyPin, ledPin = ledPin)
+}
+
 fun loadProperties(fileName: String) = Properties().apply {
     FileInputStream(fileName).use { fis ->
         load(fis)

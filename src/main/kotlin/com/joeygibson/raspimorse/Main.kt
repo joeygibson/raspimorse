@@ -24,11 +24,16 @@ package com.joeygibson.raspimorse
  * SOFTWARE.
  */
 
-import com.joeygibson.raspimorse.util.loadProperties
+import com.diozero.Button
+import com.diozero.LED
+import com.diozero.api.GpioPullUpDown
+import com.diozero.util.SleepUtil
+import com.joeygibson.raspimorse.reader.TelegraphKeyWithLEDReader
+import com.joeygibson.raspimorse.util.Config
+import com.joeygibson.raspimorse.util.from
 import com.natpryce.hamkrest.should.describedAs
 import joptsimple.OptionParser
 import mu.KotlinLogging
-import java.util.*
 import kotlin.system.exitProcess
 
 val logger = KotlinLogging.logger {}
@@ -52,24 +57,29 @@ fun main(args: Array<String>) {
         exitProcess(1)
     }
 
-    val properties = if (options.has("properties")) {
-        loadProperties(options.valueOf("properties").toString())
+    val config = if (options.has("properties")) {
+        Config.from(options.valueOf("properties").toString())
     } else {
-        Properties()
-    }
-
-    if (properties.isEmpty) {
         if (!options.has("key") || !options.has("led")) {
             System.err.println("You must specify the pins to use")
             optParser.printHelpOn(System.out)
             exitProcess(2)
         }
 
-        with(properties) {
-            set("key", options.valueOf("key").toString())
-            set("led", options.valueOf("led").toString())
-        }
+        val keyPin = options.valueOf("key").let { (it as? Int)?.toInt() ?: 0 }
+        val ledPin = options.valueOf("led").let { (it as? Int)?.toInt() ?: 0 }
+
+        Config(keyPin = keyPin, ledPin = ledPin)
     }
 
-    logger.info { "Running with $properties" }
+    logger.info { "Running with $config" }
+
+    val button = Button(config.keyPin, GpioPullUpDown.PULL_UP)
+    val led = LED(config.ledPin)
+
+    val keyReader = TelegraphKeyWithLEDReader(led = led)
+    button.whenPressed { keyReader.pressed() }
+    button.whenReleased { keyReader.released() }
+
+    SleepUtil.pause()
 }

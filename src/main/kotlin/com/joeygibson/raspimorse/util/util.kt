@@ -34,8 +34,8 @@ data class Config(val keyPin: Int = 17, val ledPin: Int = 22) {
 fun Config.Companion.from(fileName: String): Config {
     val props = loadProperties(fileName)
 
-    val keyPin = props["key"].let { (it as? Int)?.toInt() ?: 0 }
-    val ledPin = props["led"].let { (it as? Int)?.toInt() ?: 0 }
+    val keyPin = props.getProperty("key")?.toInt() ?: 0
+    val ledPin = props.getProperty("led")?.toInt() ?: 0
 
     return Config(keyPin = keyPin, ledPin = ledPin)
 }

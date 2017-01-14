@@ -41,14 +41,16 @@ val logger = KotlinLogging.logger {}
 fun main(args: Array<String>) {
     val optParser = OptionParser()
 
-    with(optParser) {
-        accepts("key").withRequiredArg()
+    val keyOpt = optParser.accepts("key").withRequiredArg().ofType(Int::class.java)
                 .describedAs("The pin number the telegraph key connects to")
-        accepts("led").withRequiredArg().describedAs("The pin number of the LED")
-        acceptsAll(listOf("properties", "props", "p")).withRequiredArg()
+
+    val ledOpt = optParser.accepts("led").withRequiredArg().ofType(Int::class.java)
+                .describedAs("The pin number of the LED")
+
+    optParser.acceptsAll(listOf("properties", "props", "p")).withRequiredArg()
                 .describedAs("properties file with pin assignments")
-        acceptsAll(listOf("help", "h", "?")).describedAs("show help screen")
-    }
+
+    optParser.acceptsAll(listOf("help", "h", "?")).describedAs("show help screen")
 
     val options = optParser.parse(*args)
 
@@ -66,8 +68,11 @@ fun main(args: Array<String>) {
             exitProcess(2)
         }
 
-        val keyPin = options.valueOf("key").let { (it as? Int)?.toInt() ?: 0 }
-        val ledPin = options.valueOf("led").let { (it as? Int)?.toInt() ?: 0 }
+        val keyPin = options.valueOf(keyOpt)
+        val ledPin = options.valueOf(ledOpt)
+
+        println("key: $keyPin")
+        println("led: $ledPin")
 
         Config(keyPin = keyPin, ledPin = ledPin)
     }

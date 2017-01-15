@@ -1,7 +1,4 @@
-package com.joeygibson.raspimorse.util
-
-import java.io.FileInputStream
-import java.util.*
+package com.joeygibson.raspimorse.reader
 
 /*
  * MIT License
@@ -27,21 +24,12 @@ import java.util.*
  * SOFTWARE.
  */
 
-data class Config(val keyPin: Int = 17, val ledPin: Int = 22) {
-    companion object {}
+enum class InputType {
+    KEY_PRESS,
+    SILENCE
 }
 
-fun Config.Companion.from(fileName: String): Config {
-    val props = loadProperties(fileName)
-
-    val keyPin = props.getProperty("key")?.toInt() ?: 0
-    val ledPin = props.getProperty("led")?.toInt() ?: 0
-
-    return Config(keyPin = keyPin, ledPin = ledPin)
-}
-
-fun loadProperties(fileName: String) = Properties().apply {
-    FileInputStream(fileName).use { fis ->
-        load(fis)
-    }
+data class Input(val inputType: InputType, val duration: Long) {
+    fun isKeyPress() = inputType == InputType.KEY_PRESS
+    fun isSilence() = !isKeyPress()
 }

@@ -86,5 +86,9 @@ fun main(args: Array<String>) {
     button.whenPressed { keyReader.pressed() }
     button.whenReleased { keyReader.released() }
 
+    for (elem in keyReader.asSequence()) {
+        println(elem)
+    }
+
     SleepUtil.pause()
 }

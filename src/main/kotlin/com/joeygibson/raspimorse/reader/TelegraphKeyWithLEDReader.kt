@@ -27,6 +27,7 @@ package com.joeygibson.raspimorse.reader
 import com.diozero.LED
 import mu.KotlinLogging
 import java.lang.System.currentTimeMillis
+import java.util.concurrent.ArrayBlockingQueue
 
 /**
  * Processor for input events, that turns on an LED when the button
@@ -35,6 +36,7 @@ import java.lang.System.currentTimeMillis
 class TelegraphKeyWithLEDReader(val led: LED) : TelegraphKeyReader {
     private val logger = KotlinLogging.logger {}
     private var pressedAt: Long = 0
+    private val queue = ArrayBlockingQueue<Input>(1000)
 
     override fun pressed() {
         pressedAt = currentTimeMillis()
@@ -43,13 +45,23 @@ class TelegraphKeyWithLEDReader(val led: LED) : TelegraphKeyReader {
         logger.debug { "Pressed at: $pressedAt" }
     }
 
-    override fun released(): Long {
+    override fun released() {
         led.off()
 
-        val duration = currentTimeMillis() - pressedAt
+        val input = Input(InputType.KEY_PRESS, currentTimeMillis() - pressedAt)
 
-        logger.debug { "Duration: $duration" }
+        logger.debug { "Input: $input" }
 
-        return duration
+        queue.add(input)
     }
+
+    override fun asSequence() = generateSequence {
+        while (queue.isEmpty()) {
+            Thread.sleep(10)
+        }
+
+        queue.remove()
+    }
+
+    override fun hasDataReady() = queue.isNotEmpty()
 }

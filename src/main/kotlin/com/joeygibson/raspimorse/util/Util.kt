@@ -1,4 +1,5 @@
-package com.joeygibson.raspimorse.reader
+package com.joeygibson.raspimorse.util
+
 /*
  * MIT License
  *
@@ -23,15 +24,24 @@ package com.joeygibson.raspimorse.reader
  * SOFTWARE.
  */
 
-/**
- * Interface for getting pressed and released events from an input device,
- * which is assumed to be a telegraph key. Any button capable of opening
- * and closing a circuit could be used, but a telegraph key is much more
- * fun.
- */
-interface TelegraphKeyReader {
-    fun pressed()
-    fun released()
-    fun asSequence(): Sequence<Input>
-    fun hasDataReady(): Boolean
+import java.io.FileInputStream
+import java.util.*
+
+data class Config(val keyPin: Int = 17, val ledPin: Int = 22) {
+    companion object {}
+}
+
+fun Config.Companion.from(fileName: String): Config {
+    val props = loadProperties(fileName)
+
+    val keyPin = props.getProperty("key")?.toInt() ?: 0
+    val ledPin = props.getProperty("led")?.toInt() ?: 0
+
+    return Config(keyPin = keyPin, ledPin = ledPin)
+}
+
+fun loadProperties(fileName: String) = Properties().apply {
+    FileInputStream(fileName).use { fis ->
+        load(fis)
+    }
 }

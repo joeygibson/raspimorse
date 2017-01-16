@@ -24,6 +24,7 @@ package com.joeygibson.raspimorse.interpreter
  * SOFTWARE.
  */
 
-interface MorseCodeDecoder {
-    fun decode(): Sequence<Char>
+enum class DotOrDash {
+    DOT,
+    DASH
 }

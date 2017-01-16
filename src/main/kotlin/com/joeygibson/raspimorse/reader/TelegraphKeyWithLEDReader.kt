@@ -36,21 +36,33 @@ import java.util.concurrent.ArrayBlockingQueue
 class TelegraphKeyWithLEDReader(val led: LED) : TelegraphKeyReader {
     private val logger = KotlinLogging.logger {}
     private var pressedAt: Long = 0
+    private var releasedAt: Long = 0
     private val queue = ArrayBlockingQueue<Input>(1000)
 
     override fun pressed() {
         pressedAt = currentTimeMillis()
         led.on()
 
+        val duration = pressedAt - releasedAt
+
+        if (releasedAt > 0 && duration > 100) {
+            val input = Input(InputType.SILENCE, duration)
+
+            logger.debug { "Silence: $input" }
+
+            queue.add(input)
+        }
+
         logger.debug { "Pressed at: $pressedAt" }
     }
 
     override fun released() {
+        releasedAt = currentTimeMillis()
         led.off()
 
-        val input = Input(InputType.KEY_PRESS, currentTimeMillis() - pressedAt)
+        val input = Input(InputType.KEY_PRESS, releasedAt - pressedAt)
 
-        logger.debug { "Input: $input" }
+        logger.debug { "Keypress: $input" }
 
         queue.add(input)
     }

@@ -30,22 +30,33 @@ import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.isWithin
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.whenever
+import org.junit.Before
 import org.junit.Test
 import kotlin.test.assertTrue
 
 class TelegraphKeyReaderTest {
-    @Test
-    fun testBasicRead() {
-        val duration = 1000L
+    lateinit var led: LED
+    lateinit var reader: TelegraphKeyReader
 
-        val led: LED = mock()
-        var turnOns = 0
-        var turnOffs = 0
+    var turnOns = 0
+    var turnOffs = 0
+
+    @Before
+    fun setup() {
+        led = mock()
+        turnOns = 0
+        turnOffs = 0
 
         whenever(led.on()).then { turnOns++ }
         whenever(led.off()).then { turnOffs++ }
 
-        val reader = TelegraphKeyWithLEDReader(led)
+        reader = TelegraphKeyWithLEDReader(led)
+    }
+
+    @Test
+    fun testBasicRead() {
+        val duration = 1000L
+
         reader.pressed()
         Thread.sleep(duration)
         reader.released()
@@ -67,15 +78,6 @@ class TelegraphKeyReaderTest {
     fun testMultipleRead() {
         val dot = 100L
         val dash = 1000L
-
-        val led: LED = mock()
-        var turnOns = 0
-        var turnOffs = 0
-
-        whenever(led.on()).then { turnOns++ }
-        whenever(led.off()).then { turnOffs++ }
-
-        val reader = TelegraphKeyWithLEDReader(led)
 
         val durations = listOf(dot, dot, dot, dash, dash, dash, dot, dot, dot)
 
@@ -101,6 +103,38 @@ class TelegraphKeyReaderTest {
             assertThat(input.inputType, equalTo(InputType.KEY_PRESS))
             assertThat(input.duration, isWithin(genRange(duration, 10)))
         }
+    }
+
+    @Test
+    fun testWithSilence() {
+        val pressDuration = 100L
+        val silenceDuration = 1000L
+
+        reader.pressed()
+        Thread.sleep(pressDuration)
+        reader.released()
+
+        Thread.sleep(silenceDuration)
+        reader.pressed()
+        Thread.sleep(pressDuration)
+        reader.released()
+
+        assertTrue(reader.hasDataReady())
+
+        val inputs = reader.asSequence()
+        val inputsList = inputs.take(3).toList()
+
+        var input = inputsList[0]
+        assertThat(input.inputType, equalTo(InputType.KEY_PRESS))
+        assertThat(input.duration, isWithin(genRange(pressDuration, 10)))
+
+        input = inputsList[1]
+        assertThat(input.inputType, equalTo(InputType.SILENCE))
+        assertThat(input.duration, isWithin(genRange(silenceDuration, 10)))
+
+        input = inputsList[2]
+        assertThat(input.inputType, equalTo(InputType.KEY_PRESS))
+        assertThat(input.duration, isWithin(genRange(pressDuration, 10)))
     }
 
     fun genRange(duration: Long, tolerance: Int): ClosedRange<Long> {

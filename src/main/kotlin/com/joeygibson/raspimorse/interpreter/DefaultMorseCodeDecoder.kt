@@ -27,14 +27,11 @@ import java.util.concurrent.ArrayBlockingQueue
  * SOFTWARE.
  */
 
-class DefaultMoreseCodeDecoder(val input: Sequence<Input>): MorseCodeDecoder {
-    private val inputQueue = ArrayBlockingQueue<Input>(1000)
-
+class DefaultMoreseCodeDecoder(val inputSequence: Sequence<Input>): MorseCodeDecoder {
     override fun decode() = generateSequence {
-        while (inputQueue.isEmpty()) {
-            Thread.sleep(10)
-        }
-
+//        for (input in inputSequence) {
+//
+//        }
         'x'
     }
 }

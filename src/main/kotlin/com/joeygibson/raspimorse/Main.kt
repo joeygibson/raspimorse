@@ -28,6 +28,7 @@ import com.diozero.Button
 import com.diozero.LED
 import com.diozero.api.GpioPullUpDown
 import com.diozero.util.SleepUtil
+import com.joeygibson.raspimorse.interpreter.DefaultMoreseCodeDecoder
 import com.joeygibson.raspimorse.reader.TelegraphKeyWithLEDReader
 import com.joeygibson.raspimorse.util.Config
 import com.joeygibson.raspimorse.util.from
@@ -86,8 +87,10 @@ fun main(args: Array<String>) {
     button.whenPressed { keyReader.pressed() }
     button.whenReleased { keyReader.released() }
 
-    for (elem in keyReader.asSequence()) {
-        println(elem)
+    val decoder = DefaultMoreseCodeDecoder(keyReader.asSequence())
+
+    for (char in decoder.decode()) {
+        println(char)
     }
 
     SleepUtil.pause()

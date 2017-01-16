@@ -28,19 +28,85 @@ import com.diozero.LED
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.isWithin
+import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.whenever
 import org.junit.Test
-import org.mockito.Mockito.mock
+import kotlin.test.assertTrue
 
 class TelegraphKeyReaderTest {
     @Test
-    fun testReadDot() {
-        val led = mock(LED::class.java)
+    fun testBasicRead() {
+        val duration = 1000L
+
+        val led: LED = mock()
+        var turnOns = 0
+        var turnOffs = 0
+
+        whenever(led.on()).then { turnOns++ }
+        whenever(led.off()).then { turnOffs++ }
 
         val reader = TelegraphKeyWithLEDReader(led)
         reader.pressed()
-        Thread.sleep(1000)
-        val duration = reader.released()
+        Thread.sleep(duration)
+        reader.released()
 
+        assertThat(turnOns, equalTo(1))
+        assertThat(turnOffs, equalTo(1))
 
+        assertTrue(reader.hasDataReady())
+
+        val inputs = reader.asSequence()
+        val input = inputs.first()
+
+        assertThat(input.inputType, equalTo(InputType.KEY_PRESS))
+        assertThat(input.duration,
+                isWithin((duration * 0.9).toLong()..(duration * 1.1).toLong()))
+    }
+
+    @Test
+    fun testMultipleRead() {
+        val dot = 100L
+        val dash = 1000L
+
+        val led: LED = mock()
+        var turnOns = 0
+        var turnOffs = 0
+
+        whenever(led.on()).then { turnOns++ }
+        whenever(led.off()).then { turnOffs++ }
+
+        val reader = TelegraphKeyWithLEDReader(led)
+
+        val durations = listOf(dot, dot, dot, dash, dash, dash, dot, dot, dot)
+
+        durations.forEach { duration ->
+            reader.pressed()
+            Thread.sleep(duration)
+            reader.released()
+        }
+
+        assertThat(turnOns, equalTo(durations.size))
+        assertThat(turnOffs, equalTo(durations.size))
+
+        assertTrue(reader.hasDataReady())
+
+        val inputs = reader.asSequence()
+        val inputsList = inputs.take(durations.size).toList()
+
+        assertThat(inputsList.size, equalTo(durations.size))
+
+        inputsList.forEachIndexed { index, input ->
+            val duration = durations[index]
+
+            assertThat(input.inputType, equalTo(InputType.KEY_PRESS))
+            assertThat(input.duration, isWithin(genRange(duration, 10)))
+        }
+    }
+
+    fun genRange(duration: Long, tolerance: Int): ClosedRange<Long> {
+        val lowerBound = (duration * ((100 - tolerance) / 100.0)).toLong()
+        val upperBound = (duration * ((100 + tolerance) / 100.0)).toLong()
+
+        return lowerBound..upperBound
     }
 }

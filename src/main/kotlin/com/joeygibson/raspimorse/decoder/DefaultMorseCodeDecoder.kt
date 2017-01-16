@@ -6,6 +6,7 @@ import com.joeygibson.raspimorse.reader.Input
 import com.joeygibson.raspimorse.util.genRange
 import com.joeygibson.raspimorse.util.isBetween
 import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.fixedRateTimer
 
 /*
  * MIT License
@@ -42,19 +43,26 @@ class DefaultMorseCodeDecoder(val inputSequence: Sequence<Input>,
     private val lock = ReentrantLock()
 
     override fun go() {
-        for (input in inputSequence) {
-            if (isInterLetterSilence(input) ||
-                    isInterWordSilence(input)) {
-                val letter = decodeWorkingList(workingList)
+        fixedRateTimer(name = "Decoder Thread",
+                initialDelay = 10,
+                period = 100,
+                daemon = true) {
+            for (input in inputSequence) {
+                if (isInterLetterSilence(input) ||
+                        isInterWordSilence(input)) {
+                    val letter = decodeWorkingList(workingList)
 
-                if (letter != null) {
-                    workingList.clear()
+                    if (letter != null) {
+                        workingList.clear()
 
-                    chars.add(letter)
+                        synchronized(lock) {
+                            chars.add(letter)
+                        }
+                    }
+                } else {
+                    val dod = convertToDotOrDash(input.duration)
+                    workingList.add(dod)
                 }
-            } else {
-                val dod = convertToDotOrDash(input.duration)
-                workingList.add(dod)
             }
         }
     }

@@ -27,8 +27,8 @@ package com.joeygibson.raspimorse
 import com.diozero.Button
 import com.diozero.LED
 import com.diozero.api.GpioPullUpDown
-import com.diozero.util.SleepUtil
 import com.joeygibson.raspimorse.decoder.DefaultMorseCodeDecoder
+import com.joeygibson.raspimorse.reader.CalibrationKeyReader
 import com.joeygibson.raspimorse.reader.TelegraphKeyWithLEDReader
 import com.joeygibson.raspimorse.util.Config
 import com.joeygibson.raspimorse.util.from
@@ -42,14 +42,27 @@ val logger = KotlinLogging.logger {}
 fun main(args: Array<String>) {
     val optParser = OptionParser()
 
-    val keyOpt = optParser.accepts("key").withRequiredArg().ofType(Int::class.java)
-                .describedAs("The pin number the telegraph key connects to")
+    val keyOpt = optParser.accepts("key")
+            .withRequiredArg()
+            .ofType(Int::class.java)
+            .describedAs("The pin number the telegraph key connects to")
+            .defaultsTo(17)
 
-    val ledOpt = optParser.accepts("led").withRequiredArg().ofType(Int::class.java)
-                .describedAs("The pin number of the LED")
+    val ledOpt = optParser.accepts("led")
+            .withRequiredArg()
+            .ofType(Int::class.java)
+            .describedAs("The pin number of the LED")
+            .defaultsTo(22)
 
-    optParser.acceptsAll(listOf("properties", "props", "p")).withRequiredArg()
-                .describedAs("properties file with pin assignments")
+    val toleranceOpt = optParser.accepts("tolerance")
+            .withRequiredArg()
+            .ofType(Int::class.java)
+            .describedAs("Percent tolerance for durations")
+            .defaultsTo(10)
+
+    optParser.acceptsAll(listOf("properties", "props", "p"))
+            .withRequiredArg()
+            .describedAs("properties file with pin assignments")
 
     optParser.acceptsAll(listOf("help", "h", "?")).describedAs("show help screen")
 
@@ -71,11 +84,9 @@ fun main(args: Array<String>) {
 
         val keyPin = options.valueOf(keyOpt)
         val ledPin = options.valueOf(ledOpt)
+        val tolerance = options.valueOf(toleranceOpt)
 
-        println("key: $keyPin")
-        println("led: $ledPin")
-
-        Config(keyPin = keyPin, ledPin = ledPin)
+        Config(keyPin = keyPin, ledPin = ledPin, tolerance = tolerance)
     }
 
     logger.info { "Running with $config" }
@@ -83,15 +94,80 @@ fun main(args: Array<String>) {
     val button = Button(config.keyPin, GpioPullUpDown.PULL_UP)
     val led = LED(config.ledPin)
 
+    val (dotDuration, dashDuration) = calibrate(button)
+
+    println("Calibrated at: ($dotDuration, $dashDuration)")
+
     val keyReader = TelegraphKeyWithLEDReader(led = led)
     button.whenPressed { keyReader.pressed() }
     button.whenReleased { keyReader.released() }
 
-//    val decoder = DefaultMorseCodeDecoder(keyReader.asSequence(), 100, 1000, 10)
+    val decoder = DefaultMorseCodeDecoder(keyReader.asSequence(), dotDuration,
+            dashDuration, config.tolerance)
 
-//    for (char in decoder.decode()) {
-//        println(char)
-//    }
+    decoder.go()
 
-    SleepUtil.pause()
+    while (true) {
+        while (!decoder.hasDecodedChars()) {
+            Thread.sleep(10)
+        }
+
+        val chars = decoder.decodedChars()
+
+        println(chars)
+    }
+}
+
+fun calibrate(button: Button): Pair<Long, Long> {
+    println("Calibrating.")
+
+    val calibrationLoops = 3
+
+    val keyReader = CalibrationKeyReader(calibrationLoops)
+    button.whenPressed { keyReader.pressed() }
+    button.whenReleased { keyReader.released() }
+
+    val durations = mutableListOf<Long>()
+
+    // First, dots
+    for (x in 1..calibrationLoops) {
+        println("Please key in the letter 's' [...]")
+
+        while (!keyReader.hasDataReady()) {
+            Thread.sleep(10)
+        }
+
+        val inputs = keyReader.asSequence().toList().map { it.duration }
+
+        val avgDuration = inputs.sum() / calibrationLoops
+
+        durations.add(avgDuration)
+
+        keyReader.reset()
+    }
+
+    val avgDotDuration = durations.average().toLong()
+
+    println("DOT: $avgDotDuration")
+    // Now dashes
+    durations.clear()
+
+    for (x in 1..calibrationLoops) {
+        println("Please key in the letter 'o' [---]")
+
+        while (!keyReader.hasDataReady()) {
+            Thread.sleep(10)
+        }
+
+        val inputs = keyReader.asSequence().toList().map { it.duration }
+        val avgDuration = inputs.sum() / calibrationLoops
+
+        durations.add(avgDuration)
+
+        keyReader.reset()
+    }
+
+    val avgDashDuration = durations.average().toLong()
+
+    return Pair(avgDotDuration, avgDashDuration)
 }

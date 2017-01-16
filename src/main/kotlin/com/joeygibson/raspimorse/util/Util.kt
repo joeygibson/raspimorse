@@ -27,7 +27,7 @@ package com.joeygibson.raspimorse.util
 import java.io.FileInputStream
 import java.util.*
 
-data class Config(val keyPin: Int = 17, val ledPin: Int = 22) {
+data class Config(val keyPin: Int = 17, val ledPin: Int = 22, val tolerance: Int = 10) {
     companion object {}
 }
 
@@ -37,7 +37,9 @@ fun Config.Companion.from(fileName: String): Config {
     val keyPin = props.getProperty("key")?.toInt() ?: 0
     val ledPin = props.getProperty("led")?.toInt() ?: 0
 
-    return Config(keyPin = keyPin, ledPin = ledPin)
+    val tolerance = props.getProperty("tolerance")?.toInt() ?: 10
+
+    return Config(keyPin = keyPin, ledPin = ledPin, tolerance = tolerance)
 }
 
 fun loadProperties(fileName: String) = Properties().apply {

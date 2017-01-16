@@ -24,64 +24,41 @@ package com.joeygibson.raspimorse.reader
  * SOFTWARE.
  */
 
-import com.diozero.LED
 import mu.KotlinLogging
 import java.lang.System.currentTimeMillis
 import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.locks.ReentrantLock
 
 /**
- * Processor for input events, that turns on an LED when the button
- * is pressed. It turns it off again when the release occurs.
+ * Implementation of [TelegraphKeyReader] that doesn't worry about silence.
+ * It is used to just get dot and dash timing, in order to calibrate the
+ * sysyem for the user's ability.
  */
-class TelegraphKeyWithLEDReader(val led: LED) : TelegraphKeyReader {
+class CalibrationKeyReader(val count: Int) : TelegraphKeyReader {
     private val logger = KotlinLogging.logger {}
     private var pressedAt: Long = 0
-    private var releasedAt: Long = 0
     private val queue = ArrayBlockingQueue<Input>(1000)
-    private val lock = ReentrantLock()
 
     override fun pressed() {
         pressedAt = currentTimeMillis()
-        led.on()
-
-        val duration = pressedAt - releasedAt
-
-        if (releasedAt > 0 && duration > 100) {
-            val input = Input(InputType.SILENCE, duration)
-
-            logger.debug { "Silence: $input" }
-
-            synchronized(lock) {
-                queue.add(input)
-            }
-        }
 
         logger.debug { "Pressed at: $pressedAt" }
     }
 
     override fun released() {
-        releasedAt = currentTimeMillis()
-        led.off()
-
-        val input = Input(InputType.KEY_PRESS, releasedAt - pressedAt)
+        val input = Input(InputType.KEY_PRESS, currentTimeMillis() - pressedAt)
 
         logger.debug { "Keypress: $input" }
 
-        synchronized(lock) {
+        if (queue.count() < count) {
             queue.add(input)
         }
     }
 
-    override fun asSequence() = generateSequence {
-        while (queue.isEmpty()) {
-            Thread.sleep(10)
-        }
+    override fun asSequence() = queue.asSequence()
 
-        synchronized(lock) {
-            queue.remove()
-        }
-    }
+    override fun hasDataReady() = queue.count() == count
 
-    override fun hasDataReady() = queue.isNotEmpty()
+    fun reset() = queue.clear()
+
 }
+

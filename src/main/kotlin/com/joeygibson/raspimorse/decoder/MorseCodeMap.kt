@@ -1,7 +1,7 @@
-package com.joeygibson.raspimorse.interpreter
+package com.joeygibson.raspimorse.decoder
 
-import com.joeygibson.raspimorse.interpreter.DotOrDash.DASH
-import com.joeygibson.raspimorse.interpreter.DotOrDash.DOT
+import com.joeygibson.raspimorse.decoder.DotOrDash.DASH
+import com.joeygibson.raspimorse.decoder.DotOrDash.DOT
 
 /*
  * MIT License

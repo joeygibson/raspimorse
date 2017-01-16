@@ -45,3 +45,13 @@ fun loadProperties(fileName: String) = Properties().apply {
         load(fis)
     }
 }
+
+fun Long.genRange(tolerance: Int): ClosedRange<Long> {
+    val lowerBound = (this * ((100 - tolerance) / 100.0)).toLong()
+    val upperBound = (this * ((100 + tolerance) / 100.0)).toLong()
+
+    return lowerBound..upperBound
+}
+
+fun Long.isBetween(range: ClosedRange<Long>) =
+        this >= range.start && this <= range.endInclusive

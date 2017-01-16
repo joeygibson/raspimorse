@@ -25,6 +25,7 @@ package com.joeygibson.raspimorse.reader
  */
 
 import com.diozero.LED
+import com.joeygibson.raspimorse.util.genRange
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.isWithin
@@ -101,7 +102,7 @@ class TelegraphKeyReaderTest {
             val duration = durations[index]
 
             assertThat(input.inputType, equalTo(InputType.KEY_PRESS))
-            assertThat(input.duration, isWithin(genRange(duration, 10)))
+            assertThat(input.duration, isWithin(duration.genRange(10)))
         }
     }
 
@@ -126,21 +127,14 @@ class TelegraphKeyReaderTest {
 
         var input = inputsList[0]
         assertThat(input.inputType, equalTo(InputType.KEY_PRESS))
-        assertThat(input.duration, isWithin(genRange(pressDuration, 10)))
+        assertThat(input.duration, isWithin(pressDuration.genRange(10)))
 
         input = inputsList[1]
         assertThat(input.inputType, equalTo(InputType.SILENCE))
-        assertThat(input.duration, isWithin(genRange(silenceDuration, 10)))
+        assertThat(input.duration, isWithin(silenceDuration.genRange(10)))
 
         input = inputsList[2]
         assertThat(input.inputType, equalTo(InputType.KEY_PRESS))
-        assertThat(input.duration, isWithin(genRange(pressDuration, 10)))
-    }
-
-    fun genRange(duration: Long, tolerance: Int): ClosedRange<Long> {
-        val lowerBound = (duration * ((100 - tolerance) / 100.0)).toLong()
-        val upperBound = (duration * ((100 + tolerance) / 100.0)).toLong()
-
-        return lowerBound..upperBound
+        assertThat(input.duration, isWithin(pressDuration.genRange(10)))
     }
 }

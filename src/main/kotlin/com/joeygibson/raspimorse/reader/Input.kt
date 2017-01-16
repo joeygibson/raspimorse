@@ -1,5 +1,7 @@
 package com.joeygibson.raspimorse.reader
 
+import com.joeygibson.raspimorse.util.isBetween
+
 /*
  * MIT License
  *
@@ -32,4 +34,9 @@ enum class InputType {
 data class Input(val inputType: InputType, val duration: Long) {
     fun isKeyPress() = inputType == InputType.KEY_PRESS
     fun isSilence() = !isKeyPress()
+
+    companion object {}
 }
+
+fun Input.Companion.silence(duration: Long) = Input(InputType.SILENCE, duration)
+fun Input.Companion.keyPress(duration: Long) = Input(InputType.KEY_PRESS, duration)

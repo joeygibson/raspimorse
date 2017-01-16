@@ -1,4 +1,4 @@
-package com.joeygibson.raspimorse.interpreter
+package com.joeygibson.raspimorse.decoder
 
 /*
  * MIT License
@@ -24,6 +24,7 @@ package com.joeygibson.raspimorse.interpreter
  * SOFTWARE.
  */
 
-interface MorseCodeDecoder {
-    fun decode(): Sequence<Char>
+enum class DotOrDash {
+    DOT,
+    DASH
 }

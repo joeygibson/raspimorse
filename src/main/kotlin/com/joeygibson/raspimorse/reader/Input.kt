@@ -1,7 +1,5 @@
 package com.joeygibson.raspimorse.reader
 
-import com.joeygibson.raspimorse.util.isBetween
-
 /*
  * MIT License
  *

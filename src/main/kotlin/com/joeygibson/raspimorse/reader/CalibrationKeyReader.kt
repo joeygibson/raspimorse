@@ -31,7 +31,7 @@ import java.util.concurrent.ArrayBlockingQueue
 /**
  * Implementation of [TelegraphKeyReader] that doesn't worry about silence.
  * It is used to just get dot and dash timing, in order to calibrate the
- * sysyem for the user's ability.
+ * system for the user's ability.
  */
 class CalibrationKeyReader(val count: Int) : TelegraphKeyReader {
     private val logger = KotlinLogging.logger {}
